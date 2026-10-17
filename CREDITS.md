@@ -6,8 +6,9 @@
   Recorded by Brian Wood / Karoryfer Samples. https://github.com/sfzinstruments/karoryfer.black-and-green-guitars
 - **Licence:** CC0-1.0 (public domain dedication). No attribution is required; we give it anyway.
 - **Our processing** (`tools/build_pack.py`): one round-robin chosen per pitch, tuning corrected to within a few
-  cents, pre-roll trimmed, light EQ (high-pass 70 Hz, -3 dB at 250 Hz, +3 dB at 3 kHz), transient-only peak limiting,
-  levelled to match the old pack, encoded as mono 44.1 kHz 192 kbps MP3. `manifest.csv` records the source file and
+  cents, pre-roll trimmed, light EQ (high-pass 70 Hz, -3 dB at 250 Hz, +3 dB at 3 kHz), spectral noise reduction
+  against a fixed hiss profile plus a 24 dB/oct low-pass at 7 kHz (the source takes carry steady hiss above 4 kHz),
+  transient-only peak limiting, levelled to match the old pack, encoded as mono 44.1 kHz 192 kbps MP3. `manifest.csv` records the source file and
   the measured pitch, level and length of every output file.
 
 ## `electric/` and `acoustic/`

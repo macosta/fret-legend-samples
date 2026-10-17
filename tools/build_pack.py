@@ -10,19 +10,30 @@ Tone shaping is deliberately light and dry: the app adds compression, EQ (+2.5 d
 low E), -3 dB @250 Hz (the Gretsch is ~6-12 dB fuller below 300 Hz than the Strat; the app's body boost would make it
 boomy), +3 dB @3 kHz (the Gretsch is ~10 dB darker at 2.5-5 kHz; restores pick definition).
 
-Usage: python -I build_pack.py <green_ord_dir> <out_dir> [--raw]   (--raw skips the EQ, for A/B comparison)
+Noise: the recordings carry a steady amp/pickup hiss about 40 dB under the note (the same in every take, within ~2 dB).
+Levelling adds ~23 dB, which made it audible in the decay (Mark heard it, 2026-10-17). So before anything else each take
+goes through a fixed-profile spectral noise reduction (denoise() below); the profile is measured from all mf takes.
+
+Usage: python -I build_pack.py <green_ord_dir> <out_dir> [--raw] [--no-denoise]
+  --raw skips the EQ, --no-denoise skips the noise reduction and the 7 kHz low-pass (both for A/B comparison)
 """
-import csv, re, subprocess, sys, pathlib
+import csv, re, subprocess, sys, tempfile, pathlib
 import numpy as np
 
 SR = 44100
 SRC, OUT = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 RAW = "--raw" in sys.argv
+DENOISE = "--no-denoise" not in sys.argv
 PACK = OUT / "electric"
 PACK.mkdir(parents=True, exist_ok=True)
 
 TARGET_RMS_DB = -14.5    # current pack: -12.7 .. -14.8 dB RMS over the first 1.5 s
 PEAK_CAP_DB = -0.5       # current pack peaks at -0.3; leave headroom for MP3 overshoot
+# Above ~6 kHz these takes hold a flat, non-decaying layer from the pick onward: broadband hiss plus a comb of the note's
+# own harmonics around 9-11.5 kHz (A2 shows peaks 110 Hz apart, 86% of the power above 3 kHz at 1.2 s). Being pitched,
+# the comb survives noise reduction. There is almost no real guitar above 6 kHz in these takes even at the attack, so a
+# steep low-pass (24 dB/oct at 7 kHz, roughly what a speaker cabinet does) removes it without dulling the note.
+LOWPASS = "lowpass=f=7000:poles=2,lowpass=f=7000:poles=2"
 EQ = "highpass=f=70:poles=2,equalizer=f=250:t=q:w=0.9:g=-3,equalizer=f=3000:t=q:w=0.8:g=3"
 
 # --- the app's file map (mirror of buildSamplerUrls in src/hooks/useGuitarTone.ts) ---
@@ -47,6 +58,42 @@ def ff(path, af="anull"):
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-af", af, "-ac", "1", "-ar", str(SR),
                           "-f", "f32le", "-"], capture_output=True, check=True).stdout
     return np.frombuffer(raw, dtype=np.float32).copy()
+
+# --- noise reduction (STFT, fixed noise profile, soft spectral subtraction) ---
+NFFT, HOP = 2048, 512
+WIN = np.hanning(NFFT)
+NOISE_POWER = 9.5     # the profile is the 10th percentile of noise magnitude; for steady noise the mean POWER is 9.5x
+                      # its square (Rayleigh statistics; measured |X|/p10 ~3 in late frames, which agrees)
+NOISE_OVER = 2.0      # subtract twice the mean noise power (3 dB margin)
+NOISE_FLOOR = 0.06    # never cut a bin by more than ~24 dB, so the decay stays natural instead of gated
+SMOOTH_T, SMOOTH_F = 7, 5   # frames x bins the power is averaged over before deciding; raw per-frame noise flickers
+                            # past any threshold, and each flicker opened the gate (first try: only 3-4 dB of reduction)
+
+def stft(x):
+    n = 1 + -(-max(0, len(x) - NFFT) // HOP)  # ceil, so the last frame covers the end
+    x = np.pad(x, (0, (n - 1) * HOP + NFFT - len(x)))
+    return np.fft.rfft(np.stack([x[i * HOP:i * HOP + NFFT] * WIN for i in range(n)]), axis=1)
+
+def istft(S, length):
+    fr = np.fft.irfft(S, NFFT, axis=1) * WIN
+    out = np.zeros((len(S) - 1) * HOP + NFFT); norm = np.zeros_like(out)
+    for i, f in enumerate(fr):
+        out[i * HOP:i * HOP + NFFT] += f; norm[i * HOP:i * HOP + NFFT] += WIN ** 2
+    return (out / np.maximum(norm, 1e-3))[:length]
+
+def noise_profile(paths):
+    """Per take and bin, the 10th percentile of magnitude over time (after the pick); median across takes. A partial
+    sits in only a few bins of any one note, so the cross-note median sees the hiss, not the strings."""
+    return np.median([np.percentile(np.abs(stft(ff(p)[int(0.15 * SR):].astype(np.float64))), 10, axis=0)
+                      for p in paths], axis=0)
+
+def denoise(x, prof):
+    S = stft(x.astype(np.float64)); P = np.abs(S) ** 2
+    k = np.ones((SMOOTH_T, SMOOTH_F)) / (SMOOTH_T * SMOOTH_F)
+    Pp = np.pad(P, ((SMOOTH_T // 2,), (SMOOTH_F // 2,)), mode="edge")
+    Ps = np.lib.stride_tricks.sliding_window_view(Pp, k.shape).mean(axis=(2, 3))
+    g = np.sqrt(np.clip(1 - NOISE_OVER * NOISE_POWER * prof ** 2 / (Ps + 1e-20), NOISE_FLOOR ** 2, 1))
+    return istft(S * g, len(x)).astype(np.float32)
 
 def onset(x):
     return int(np.argmax(np.abs(x) > np.abs(x).max() * 0.05))
@@ -85,6 +132,9 @@ def limit(x, cap):
     over = np.abs(y).max() / cap
     return y / over if over > 1 else y
 
+prof = noise_profile([p for m in files for p in src[m]]) if DENOISE else None
+tmpdir = pathlib.Path(tempfile.mkdtemp())
+
 rows = []
 for midi in sorted(files):
     name = files[midi]
@@ -97,8 +147,15 @@ for midi in sorted(files):
     cents = pitch_cents(x, midi)
     tune = f"asetrate={SR * 2 ** (-cents / 1200):.3f},aresample={SR}," if abs(cents) > 3 else ""
     start = max(0.0, onset(x) / SR - 0.003)
-    af = f"{tune}atrim=start={start:.5f},asetpts=PTS-STARTPTS,afade=t=in:d=0.002" + ("" if RAW else "," + EQ)
-    y = ff(path, af)
+    if DENOISE:  # denoise in the source's own domain (where the profile was measured), then process as before
+        clean = tmpdir / path.name
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", str(SR), "-ac", "1", "-i", "-",
+                        "-c:a", "pcm_f32le", str(clean)], input=denoise(x, prof).tobytes(), check=True)
+        path_in = clean
+    else:
+        path_in = path
+    af = f"{tune}atrim=start={start:.5f},asetpts=PTS-STARTPTS,afade=t=in:d=0.002" + ("" if RAW else "," + EQ) +         ("," + LOWPASS if DENOISE else "")
+    y = ff(path_in, af)
 
     # re-trim after EQ (it moves the onset), keep the natural decay, end on a short fade
     y = y[max(0, onset(y) - int(0.003 * SR)):].copy()
