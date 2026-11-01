@@ -22,6 +22,17 @@
   normalised to -1 dBFS peak; encoded by `tools/encode_wav_pack.py` as mono 44.1 kHz 192 kbps MP3. `manifest.csv`
   records the measured pitch, level and length of every output file.
 
+## `riffs/v1/`
+
+- **Source:** Karoryfer Black And Green Guitars, "green" (Gretsch), `ord` and `stac` articulations, f layer (CC0-1.0),
+  https://github.com/sfzinstruments/karoryfer.black-and-green-guitars. The riffs and licks are original, written for Sustain Six.
+- **Amps:** Neural Amp Modeler captures on TONE3000, "Diezel VH4 ch3" by @petrc blended with "EVH 5150III 100W CH Red"
+  by @ripper. Their T3K licence lets users publish the resulting outputs; the capture files are not redistributed and
+  are not in this repo.
+- **Cab:** the Mesa 4x12 impulse response from MIT JS Rocks (MIT licence), which the app already ships.
+- **Our processing:** `scripts/tone/render_library.py` in the app repo (preset `tight_metal`): own-code boost, EQ,
+  compressor, delay and Pedalboard reverb; levelled to -16 LUFS; folded to one exact loop per file.
+
 ## `electric/` and `acoustic/`
 
 - **Source:** MDM Strat v1.0 F and MDM Acoustic Guitar v1.0 F by Mića de Mijatović, published on Pianobook.

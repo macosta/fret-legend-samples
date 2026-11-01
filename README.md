@@ -18,6 +18,7 @@ No `@main` in the URL: Tone.js encodes the `@` and jsDelivr then returns 400.
 | `electric-gretsch/` | Clean (candidate, not yet used by the app) | Karoryfer Black And Green, Gretsch, mf (CC0) |
 | `acoustic/` | Acoustic | MDM Acoustic Guitar v1.0 F (Sustain Pick, vel 076) |
 | `overdrive/` | Overdrive | _empty placeholder_ — code falls back to `electric/` |
+| `riffs/v1/` | Riffs and Licks pages | Library riffs and licks, Tight Metal tone, one exact loop per file (see CREDITS.md) |
 
 ## Filename convention
 
@@ -36,6 +37,15 @@ Each pack covers from the open low-E (MIDI 40 = E2) up through whatever pitch th
 - MP3, CBR 192 kbps, 44.1 kHz, mono
 - Each file: 11–18 s, single isolated note, natural decay, no effects (`electric-gretsch/`: 2.3–6.2 s, light EQ, see CREDITS.md)
 - Source FLACs at single velocity layer per pack (077 for Strat, 076 for acoustic)
+
+## Riff loops (`riffs/`)
+
+`riffs/<version>/<item>_<preset>_<speed>_<version>.flac`, e.g. `chug_e_tight_metal_50_v1.flac`: one riff or lick,
+rendered alone at that percent of its tempo, 16-bit stereo 44.1 kHz FLAC (lossless, so the length is sample-exact).
+Each file is EXACTLY one loop long; ring-out and effects tails are folded onto the head, so it loops seamlessly.
+Rendered by `scripts/tone/render_library.py` in the app repo, which also writes the app's `scripts/tone/riffs/manifest.json`.
+**Never overwrite a published file name**: the URLs are unversioned and the frozen native apps read them. New audio
+gets a new version folder.
 
 ## Attribution and licences
 
