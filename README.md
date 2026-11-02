@@ -18,7 +18,7 @@ No `@main` in the URL: Tone.js encodes the `@` and jsDelivr then returns 400.
 | `electric-gretsch/` | Clean (candidate, not yet used by the app) | Karoryfer Black And Green, Gretsch, mf (CC0) |
 | `acoustic/` | Acoustic | MDM Acoustic Guitar v1.0 F (Sustain Pick, vel 076) |
 | `overdrive/` | Overdrive | _empty placeholder_ — code falls back to `electric/` |
-| `riffs/v1/` | Riffs and Licks pages | Library riffs and licks, Tight Metal tone, one exact loop per file (see CREDITS.md) |
+| `riffs/v1/`, `riffs/v2/` | Riffs and Licks pages | Library riffs and licks, Tight Metal tone, one exact loop per file (see CREDITS.md) |
 
 ## Filename convention
 

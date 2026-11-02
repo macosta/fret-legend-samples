@@ -22,7 +22,9 @@
   normalised to -1 dBFS peak; encoded by `tools/encode_wav_pack.py` as mono 44.1 kHz 192 kbps MP3. `manifest.csv`
   records the measured pitch, level and length of every output file.
 
-## `riffs/v1/`
+## `riffs/v1/` and `riffs/v2/`
+
+`v2` holds the two licks cut to 8 beats (two whole bars), from the same sources and chain as `v1`.
 
 - **Source:** Karoryfer Black And Green Guitars, "green" (Gretsch), `ord` and `stac` articulations, f layer (CC0-1.0),
   https://github.com/sfzinstruments/karoryfer.black-and-green-guitars. The riffs and licks are original, written for Sustain Six.
