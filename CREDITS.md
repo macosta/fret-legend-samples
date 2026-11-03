@@ -35,6 +35,16 @@
 - **Our processing:** `scripts/tone/render_library.py` in the app repo (preset `tight_metal`): own-code boost, EQ,
   compressor, delay and Pedalboard reverb; levelled to -16 LUFS; folded to one exact loop per file.
 
+- **Style catalog (2026-11-02):** files named `*_seventies_rock_*`, `*_classic_crunch_*` and `*_clean_spring_*` in
+  `riffs/v1/` use other captures, each T3K (outputs publishable, capture files not redistributed, not in this repo):
+  seventies_rock = "Marshall Plexi Super Lead 1959 EL34" by @ripper
+  (https://www.tone3000.com/tones/marshall-plexi-super-lead-1959-el34-40971) through the Marshall 1960 IR (MIT JS Rocks);
+  classic_crunch = "Marshall JCM 800 2203 - Crunch 2" by @sarcobe
+  (https://www.tone3000.com/tones/marshall-jcm-800-2203-86089) through the same IR; clean_spring = "Fender 68 Custom
+  Deluxe Reverb - Full Rig" by @tannerc (https://www.tone3000.com/tones/fender-68-custom-deluxe-reverb-full-rig-64712),
+  which includes its own miked cabinet, so no IR. The app repo's `scripts/tone/sources.json` logs each licence and the
+  date it was read.
+
 ## `electric/` and `acoustic/`
 
 - **Source:** MDM Strat v1.0 F and MDM Acoustic Guitar v1.0 F by Mića de Mijatović, published on Pianobook.
